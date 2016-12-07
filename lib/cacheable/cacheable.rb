@@ -1,3 +1,5 @@
+require 'digest/md5'
+
 module Cacheable
   extend ActiveSupport::Concern
 
@@ -22,7 +24,7 @@ module Cacheable
   end
 
   def self.cache_key(klass, method, *args)
-    "#{class_signature(klass)}:#{method}:#{args.join(':')}"
+    "#{class_signature(klass)}:#{method}:#{Digest::MD5.hexdigest(args.to_json)}"
   end
 
   def self.expire(klass, method, *args)

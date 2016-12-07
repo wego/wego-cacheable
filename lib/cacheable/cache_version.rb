@@ -23,7 +23,7 @@ module Cacheable
       version = Rails.cache.read(@cache_key, raw: true)
       if version.nil?
         Rails.cache.write(@cache_key, 1, raw: true, expires_in: @expiry)
-        RequestStore.store[:cache_version] = 1
+        RequestStore.store[:cache_version] = "v1"
       end
     end
 
