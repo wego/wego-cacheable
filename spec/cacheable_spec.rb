@@ -7,15 +7,15 @@ RSpec.describe Cacheable do
   describe '.cache_key' do
     it 'returns the expected cache key' do
       key = Cacheable.cache_key(Object, 'send', 1, 2, 3)
-      expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3")
+      expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:#{Digest::MD5.hexdigest([1, 2, 3].to_json)}")
     end
   end
 
   describe '.expire' do
     it 'expires the expected key' do
       expect(Rails.cache).to receive(:delete).with(
-        "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3")
-      Cacheable.expire(Object, 'send', 1, 2, 3)
+        "#{Cacheable::CacheVersion.get}:#{Object.name}:send:#{Digest::MD5.hexdigest([1, 2, 3, {a: 4}].to_json)}")
+      Cacheable.expire(Object, 'send', 1, 2, 3, {a:4})
     end
   end
 
@@ -95,6 +95,20 @@ RSpec.describe Cacheable do
       end
     end
 
+    class Concerns
+      extend ActiveSupport::Concern
+
+      included do
+        def self.by_concern(x)
+          x
+        end
+      end
+    end
+
+    class TestConcerns
+      include 
+    end
+
     let(:instance_1) { CacheableClass1.new }
     let(:instance_2) { CacheableClass2.new }
 
@@ -159,14 +173,14 @@ RSpec.describe Cacheable do
 
       it 'calls Rails.cache with the proper cache key' do
         expect(Rails.cache).to receive(:fetch).with(
-          "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:more_arguments:0:1",
+          "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:more_arguments:#{Digest::MD5.hexdigest([0, 1].to_json)}",
           expires_in: cache_duration)
         instance_1.more_arguments(0, 1)
       end
 
       it 'calls Rails.cache with the proper cache duration' do
         expect(Rails.cache).to receive(:fetch).with(
-          "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:with_expiry:",
+          "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:with_expiry:#{Digest::MD5.hexdigest([].to_json)}",
           expires_in: 5.minutes)
         instance_1.with_expiry
       end
@@ -176,7 +190,7 @@ RSpec.describe Cacheable do
           123
         end
         expect(Rails.cache).to receive(:fetch).with(
-          "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.id}:more_arguments:0:1",
+          "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.id}:more_arguments:#{Digest::MD5.hexdigest([0, 1].to_json)}",
           expires_in: cache_duration)
         instance_1.more_arguments(0, 1)
       end
@@ -225,13 +239,13 @@ RSpec.describe Cacheable do
 
       it 'calls Rails.cache with the expected arguments' do
         expect(Rails.cache).to receive(:fetch).with(
-          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:a_class_method:x:y", expires_in: cache_duration)
+          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:a_class_method:#{Digest::MD5.hexdigest(['x','y'].to_json)}", expires_in: cache_duration)
         CacheableClass2.a_class_method_with_cache('x', 'y')
       end
 
       it 'calls Rails.cache with the provided duration' do
         expect(Rails.cache).to receive(:fetch).with(
-          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:with_expiry:",
+          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:with_expiry:#{Digest::MD5.hexdigest([].to_json)}",
           expires_in: 6.minutes)
         CacheableClass2.with_expiry
       end
@@ -248,4 +262,5 @@ RSpec.describe Cacheable do
       end
     end
   end
+
 end
