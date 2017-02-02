@@ -17,13 +17,15 @@ module Cacheable
                                                                  expires_in: @expiry)
     end
 
-    def init
+    def init(version = nil)
+      version ||= 1
       @cache_key ||= build_cache_key(NAMESPACE)
       @expiry ||= EXPIRY
-      version = Rails.cache.read(@cache_key, raw: true)
-      if version.nil?
-        Rails.cache.write(@cache_key, 1, raw: true, expires_in: @expiry)
-        RequestStore.store[:cache_version] = 1
+      cached_version = Rails.cache.read(@cache_key, raw: true)
+
+      if version != cached_version
+        Rails.cache.write(@cache_key, version, raw: true, expires_in: @expiry)
+        RequestStore.store[:cache_version] = version
       end
     end
 
