@@ -23,7 +23,7 @@ module Cacheable
       @expiry ||= EXPIRY
       cached_version = Rails.cache.read(@cache_key, raw: true)
 
-      if version != cached_version
+      if version.to_i > cached_version.to_i
         Rails.cache.write(@cache_key, version, raw: true, expires_in: @expiry)
         RequestStore.store[:cache_version] = version
       end
