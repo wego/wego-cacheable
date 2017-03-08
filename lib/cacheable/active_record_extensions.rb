@@ -7,8 +7,10 @@ module Cacheable
           inherited_without_cache_extensions kls
           kls.send(:include, Cacheable)
         end
-        alias_method_chain :inherited, :cache_extensions
+        alias_method :inherited_without_cache_extensions, :inherited
+        alias_method :inherited, :inherited_with_cache_extensions
       end
+
       # Existing subclasses pick up the model extension as well
       self.descendants.each do |kls|
         kls.send(:include, Cacheable)

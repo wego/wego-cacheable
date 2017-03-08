@@ -49,7 +49,10 @@ module Cacheable
         super
         if cacheable? name
           class_eval(generate_method_with_cache(name), __FILE__, __LINE__ + 1)
-          alias_method_chain name, :cache
+
+          target_name, punctuation = name.to_s.sub(/([?!=])$/, ''), $1
+          alias_method :"#{target_name}_without_cache#{punctuation}", name
+          alias_method name, :"#{target_name}_with_cache#{punctuation}"
         end
       end
 
@@ -59,7 +62,10 @@ module Cacheable
           generated_method = generate_method_with_cache(name)
           singleton_class.instance_eval do
             class_eval(generated_method, __FILE__, __LINE__ + 1)
-            alias_method_chain name, :cache
+
+            target_name, punctuation = name.to_s.sub(/([?!=])$/, ''), $1
+            alias_method :"#{target_name}_without_cache#{punctuation}", name
+            alias_method name, :"#{target_name}_with_cache#{punctuation}"
           end
         end
       end
