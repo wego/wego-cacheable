@@ -77,6 +77,12 @@ module Cacheable
             #{name}_without_cache#{punctuation}(*args)
           end
         end
+
+        def delete_#{name}_cache#{punctuation}(*args)
+          key = Cacheable.cache_key(self, '#{name}', *args)
+          RequestStore.store[key.to_sym] = nil
+          Rails.cache.delete(key)
+        end
         EVAL
       end
 

@@ -246,6 +246,15 @@ RSpec.describe Cacheable do
           expect(CacheableClass2.method_3(8, 9)).to eq([8, 9])
         end
       end
+
+      describe 'delete_cache' do
+        it 'calls Rails.cache.delete' do
+          CacheableClass2.method_3(4,5)
+          expect(Rails.cache).to receive(:delete).with(
+            "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:method_3:4:5")
+          CacheableClass2.delete_method_3_cache(4,5)
+        end
+      end
     end
   end
 end
