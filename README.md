@@ -23,6 +23,9 @@ Or install it yourself as:
 To include the caching feature for of the gem in your Rails apps models, create config/initializer/cacheable.rb with the following line:
 ```ruby
 ActiveRecord::Base.send(:include, Cacheable::ActiveRecordExtensions)
+
+Cacheable::CacheVersion.namespace = 'application_name'
+Cacheable::CacheVersion.init
 ```
 In your model, add the functions that you want to cache the data
 ```ruby
