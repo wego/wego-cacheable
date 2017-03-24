@@ -30,6 +30,8 @@ Cacheable::CacheVersion.init
 In your model, add the functions that you want to cache the data
 ```ruby
 caches_method :name_of_the_method
+caches_method :name_of_the_method, expires_in: 1.day #defalut expires_in is 1 day
+caches_method :name_of_the_method, include_locale: true #default include_locale is false
 ```
 
 ## Contributing

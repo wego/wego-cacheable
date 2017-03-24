@@ -9,6 +9,16 @@ RSpec.describe Cacheable do
       key = Cacheable.cache_key(Object, 'send', 1, 2, 3)
       expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3")
     end
+
+    it 'returns the expected cache key with hash' do
+      key = Cacheable.cache_key(Object, 'send', 1, 2, 3, {a: 1})
+      expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:{:a=>1}")
+    end
+
+    it 'returns the expected cache key with locale' do
+      key = Cacheable.cache_key(Object, 'send', 1, 2, 3, { include_locale: true })
+      expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:en")
+    end
   end
 
   describe '.expire' do
@@ -16,6 +26,12 @@ RSpec.describe Cacheable do
       expect(Rails.cache).to receive(:delete).with(
         "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3")
       Cacheable.expire(Object, 'send', 1, 2, 3)
+    end
+
+    it 'expires the expected key with locale' do
+      expect(Rails.cache).to receive(:delete).with(
+        "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:en")
+      Cacheable.expire(Object, 'send', 1, 2, 3, { include_locale: true })
     end
   end
 
@@ -25,6 +41,8 @@ RSpec.describe Cacheable do
 
       class CacheableClass1
         include Cacheable
+
+        attr_accessor :updated_at
 
         caches_method :method_1, :output, :method_2, :more_arguments, :contains?
         caches_method :with_expiry, expires_in: 5.minutes
@@ -60,6 +78,7 @@ RSpec.describe Cacheable do
         caches_method :method_1, :method_2, :a_class_method, :method_3
         caches_method :method_4, :method_5, memoized: true
         caches_method :with_expiry, expires_in: 6.minutes
+        caches_method :method_with_locale, include_locale: true
 
         def method_1
           1
@@ -67,6 +86,10 @@ RSpec.describe Cacheable do
 
         def method_2
           2
+        end
+
+        def self.method_with_locale(a, b = 1)
+          [a, b]
         end
 
         def self.method_3(something, another)
@@ -164,6 +187,14 @@ RSpec.describe Cacheable do
         instance_1.more_arguments(0, 1)
       end
 
+      it 'calls Rails.cache with the proper cache key with updated_at' do
+        expect(Rails.cache).to receive(:fetch).with(
+          "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:#{Date.today}:more_arguments:0:1",
+          expires_in: cache_duration)
+        instance_1.updated_at = Date.today  
+        instance_1.more_arguments(0, 1)
+      end
+
       it 'calls Rails.cache with the proper cache duration' do
         expect(Rails.cache).to receive(:fetch).with(
           "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:with_expiry:",
@@ -227,6 +258,12 @@ RSpec.describe Cacheable do
         expect(Rails.cache).to receive(:fetch).with(
           "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:a_class_method:x:y", expires_in: cache_duration)
         CacheableClass2.a_class_method_with_cache('x', 'y')
+      end
+
+      it 'calls Rails.cache with the expected arguments with locale' do
+        expect(Rails.cache).to receive(:fetch).with(
+          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:method_with_locale:3:1:en", expires_in: cache_duration)
+        CacheableClass2.method_with_locale_with_cache(3, 1)
       end
 
       it 'calls Rails.cache with the provided duration' do

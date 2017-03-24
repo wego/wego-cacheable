@@ -16,13 +16,22 @@ module Cacheable
                   obj.name
                 else
                   id = obj.respond_to?(:id) ? obj.id : obj.object_id
-                  "#{obj.class.name}:#{id}"
+                  sign = "#{obj.class.name}:#{id}"
+                  if obj.respond_to?(:updated_at) && obj.updated_at
+                    sign += ":#{obj.updated_at}"
+                  end  
+                  sign
                 end
     "#{Cacheable::CacheVersion.get}:#{signature}"
   end
 
   def self.cache_key(klass, method, *args)
-    "#{class_signature(klass)}:#{method}:#{args.join(':')}"
+    include_locale = args.last.is_a?(Hash) && args.last.include?(:include_locale) ?
+                        args.pop.delete(:include_locale) :
+                        false
+    key_parts = [class_signature(klass), method, args]
+    key_parts << I18n.locale if include_locale
+    key_parts.join(':')
   end
 
   def self.expire(klass, method, *args)
@@ -67,19 +76,22 @@ module Cacheable
       private
 
       def self.generate_method_with_cache(target)
-        duration = @options[target][:expires_in]
+        options = @options[target]
+        duration = options.delete(:expires_in)
         duration ||= Cacheable.default_cache_duration
-        name, punctuation = target.to_s.sub(/([?!=])$/, ''), $1
+        name = target.to_s.sub(/([?!=])$/, '')
+        punctuation = Regexp.last_match(1)
+
         <<-EVAL
         def #{name}_with_cache#{punctuation}(*args)
-          key = Cacheable.cache_key(self, '#{name}', *args)
+          key = Cacheable.cache_key(self, '#{name}', *args#{", #{options}" unless options.empty?})
           #{generate_request_store(target)} Rails.cache.fetch(key, expires_in: #{duration}) do
             #{name}_without_cache#{punctuation}(*args)
           end
         end
 
         def delete_#{name}_cache#{punctuation}(*args)
-          key = Cacheable.cache_key(self, '#{name}', *args)
+          key = Cacheable.cache_key(self, '#{name}', *args#{", #{options}" unless options.empty?})
           RequestStore.store[key.to_sym] = nil
           Rails.cache.delete(key)
         end
