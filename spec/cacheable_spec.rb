@@ -42,6 +42,8 @@ RSpec.describe Cacheable do
       class CacheableClass1
         include Cacheable
 
+        attr_accessor :updated_at
+
         caches_method :method_1, :output, :method_2, :more_arguments, :contains?
         caches_method :with_expiry, expires_in: 5.minutes
 
@@ -182,6 +184,14 @@ RSpec.describe Cacheable do
         expect(Rails.cache).to receive(:fetch).with(
           "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:more_arguments:0:1",
           expires_in: cache_duration)
+        instance_1.more_arguments(0, 1)
+      end
+
+      it 'calls Rails.cache with the proper cache key with updated_at' do
+        expect(Rails.cache).to receive(:fetch).with(
+          "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:#{Date.today}:more_arguments:0:1",
+          expires_in: cache_duration)
+        instance_1.updated_at = Date.today  
         instance_1.more_arguments(0, 1)
       end
 

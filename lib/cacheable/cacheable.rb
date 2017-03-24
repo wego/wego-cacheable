@@ -16,7 +16,11 @@ module Cacheable
                   obj.name
                 else
                   id = obj.respond_to?(:id) ? obj.id : obj.object_id
-                  "#{obj.class.name}:#{id}"
+                  sign = "#{obj.class.name}:#{id}"
+                  if obj.respond_to?(:updated_at) && obj.updated_at
+                    sign += ":#{obj.updated_at}"
+                  end  
+                  sign
                 end
     "#{Cacheable::CacheVersion.get}:#{signature}"
   end
