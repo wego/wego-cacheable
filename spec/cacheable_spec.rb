@@ -39,13 +39,34 @@ RSpec.describe Cacheable do
     before do
       Cacheable::CacheVersion.inc
 
-      class CacheableClass1
+      module CacheableInclude
+        def a_defined_module_method
+          2
+        end
+      end
+
+      module CacheableExtend
+        def a_defined_module_class_method
+          2
+        end
+      end
+
+      class CacheableBase
+        def self.a_defined_super_class_method
+          3
+        end
+      end
+
+      class CacheableClass1 < CacheableBase
         include Cacheable
+        extend CacheableExtend
+        include CacheableInclude
 
         attr_accessor :updated_at
 
         caches_method :method_1, :output, :method_2, :more_arguments, :contains?
         caches_method :with_expiry, expires_in: 5.minutes
+        caches_extended_method :a_defined_super_class_method
 
         def method_1
           1
@@ -118,52 +139,61 @@ RSpec.describe Cacheable do
       end
     end
 
-    let(:instance_1) { CacheableClass1.new }
-    let(:instance_2) { CacheableClass2.new }
+    describe 'caching' do
+      context 'without caching' do
+        let(:instance_1) { CacheableClass1.new }
+        it 'calls the actual method on first call' do
+          outputter = double(output: 1)
+          instance_1.output(outputter)
+          expect(outputter).to have_received(:output)
+        end
+      end
 
-    it 'calls the actual method on first call' do
-      outputter = double(output: 1)
-      instance_1.output(outputter)
-      expect(outputter).to have_received(:output)
-    end
-
-    it 'gets the value from the cache for subsequent calls' do
-      outputter = double(output: 1)
-      instance_1.output(outputter)
-      instance_1.output(outputter)
-      instance_1.output(outputter)
-      expect(outputter).to have_received(:output).once
+      context 'with caching' do
+        let(:instance_1) { CacheableClass1.new }
+        it 'gets the value from the cache for subsequent calls' do
+          outputter = double(output: 1)
+          instance_1.output(outputter)
+          instance_1.output(outputter)
+          instance_1.output(outputter)
+          expect(outputter).to have_received(:output).once
+        end
+      end
     end
 
     describe 'with memoized option' do
       subject { Rails.cache }
 
       context 'given class methods' do
-        it { should receive(:fetch).once.and_return(1) }
+        it { expect(subject).to receive(:fetch).once.and_return(4) }
         after do
-          CacheableClass2.method_4(1)
-          CacheableClass2.method_4(1)
+          CacheableClass2.method_4(4)
+          CacheableClass2.method_4(4)
         end
       end
 
       context 'given instance methods' do
-        it { should receive(:fetch).once.and_return(1) }
+        let(:instance_2) { CacheableClass2.new }
+        it { expect(subject).to receive(:fetch).once.and_return(5) }
         after do
-          instance_2.method_5(1)
-          instance_2.method_5(1)
+          instance_2.method_5(5)
+          instance_2.method_5(5)
         end
       end
 
       context 'given methods without memoized' do
-        it { should receive(:fetch).twice.and_return(1) }
+        let(:instance_1) { CacheableClass1.new }
+        it { expect(subject).to receive(:fetch).twice.and_return(1) }
         after do
-          instance_1.method_1(1)
-          instance_1.method_1(1)
+          instance_1.method_1
+          instance_1.method_1
         end
       end
     end
 
     describe 'instance methods' do
+      let(:instance_1) { CacheableClass1.new }
+
       it 'returns correct value when called directly' do
         expect(instance_1.method_1).to eq(1)
       end
@@ -213,6 +243,8 @@ RSpec.describe Cacheable do
       end
 
       describe 'arguments' do
+        let(:instance_1) { CacheableClass1.new }
+
         it 'returns the argument' do
           expect(instance_1.method_2(3, 5)).to eq([3, 5])
         end
@@ -225,6 +257,7 @@ RSpec.describe Cacheable do
     end
 
     describe 'multiple declarations' do
+      let(:instance_2) { CacheableClass2.new }
       specify 'method_1 must return 1' do
         expect(instance_2.method_1).to eq(1)
       end
@@ -235,6 +268,8 @@ RSpec.describe Cacheable do
     end
 
     describe 'class methods' do
+      let(:instance_2) { CacheableClass2.new }
+
       it 'returns correct value when called directly' do
         expect(CacheableClass2.a_class_method(1,2)).to eq('1-2-1-2-3')
       end
@@ -271,6 +306,16 @@ RSpec.describe Cacheable do
           "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:with_expiry:",
           expires_in: 6.minutes)
         CacheableClass2.with_expiry
+      end
+
+      it 'added method_with_cache even if method is defined before from extend module' do
+        expect(CacheableClass1.a_defined_module_class_method).to eq(2)
+        expect(CacheableClass1.a_defined_module_class_method_with_cache).to eq(2)
+      end
+
+      it 'added method_with_cache even if method is defined before from super class' do
+        expect(CacheableClass1.a_defined_super_class_method).to eq(3)
+        expect(CacheableClass1.a_defined_super_class_method_with_cache).to eq(3)
       end
 
       describe 'arguments' do

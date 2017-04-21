@@ -19,7 +19,7 @@ module Cacheable
                   sign = "#{obj.class.name}:#{id}"
                   if obj.respond_to?(:updated_at) && obj.updated_at
                     sign += ":#{obj.updated_at}"
-                  end  
+                  end
                   sign
                 end
     "#{Cacheable::CacheVersion.get}:#{signature}"
@@ -42,12 +42,29 @@ module Cacheable
     class_eval do
       def self.caches_method(*names)
         opts = names.extract_options!
-
         @cached_methods ||= []
         @cached_methods |= names
 
         @options ||= {}
-        names.each { |name| @options[name] = opts }
+        names.each do |name|
+          @options[name] = opts
+          # if instance_methods.include? name.to_sym
+          #   add_method_with_cache name
+          # elsif methods.include? name.to_sym
+          #   add_singleton_method_with_cache name
+          # else
+          #   @cached_methods |= [name]
+          # end
+        end
+      end
+
+      def self.caches_extended_method(*names)
+        opts = names.extract_options!
+        @options ||= {}
+        names.each do |name|
+          @options[name] = opts
+          add_singleton_method_with_cache name
+        end
       end
 
       def self.cacheable?(name)
@@ -56,24 +73,31 @@ module Cacheable
 
       def self.method_added(name)
         super
-        if cacheable? name
-          class_eval(generate_method_with_cache(name), __FILE__, __LINE__ + 1)
-          alias_method_chain name, :cache
-        end
+        add_method_with_cache name if cacheable? name
       end
 
       def self.singleton_method_added(name)
         super
-        if cacheable? name
-          generated_method = generate_method_with_cache(name)
-          singleton_class.instance_eval do
-            class_eval(generated_method, __FILE__, __LINE__ + 1)
-            alias_method_chain name, :cache
-          end
-        end
+        add_singleton_method_with_cache name if cacheable? name
       end
 
       private
+
+      def self.add_method_with_cache(name)
+
+            p "ADDD add_method_with_cache #{name}"
+        class_eval(generate_method_with_cache(name), __FILE__, __LINE__ + 1)
+        alias_method_chain name, :cache
+      end
+
+      def self.add_singleton_method_with_cache(name)
+            p "ADDD add_singleton_method_with_cache #{name}"
+        generated_method = generate_method_with_cache(name)
+        singleton_class.instance_eval do
+          class_eval(generated_method, __FILE__, __LINE__ + 1)
+          alias_method_chain name, :cache
+        end
+      end
 
       def self.generate_method_with_cache(target)
         options = @options[target]
