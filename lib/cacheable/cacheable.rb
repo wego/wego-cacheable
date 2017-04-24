@@ -92,8 +92,7 @@ module Cacheable
             Rails.cache.delete(key)
           end
 
-                         private
-
+          private
           def generate_request_store(key, options)
             if options && options[:memoized] == true
               RequestStore.store[key.to_sym] ||= yield
