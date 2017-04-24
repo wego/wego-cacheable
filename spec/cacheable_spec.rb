@@ -209,22 +209,25 @@ RSpec.describe Cacheable do
       it 'calls Rails.cache with the proper cache key' do
         expect(Rails.cache).to receive(:fetch).with(
           "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:more_arguments:0:1",
-          expires_in: cache_duration)
+          expires_in: cache_duration
+        )
         instance_1.more_arguments(0, 1)
       end
 
       it 'calls Rails.cache with the proper cache key with updated_at' do
         expect(Rails.cache).to receive(:fetch).with(
           "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:#{Date.today}:more_arguments:0:1",
-          expires_in: cache_duration)
-        instance_1.updated_at = Date.today  
+          expires_in: cache_duration
+        )
+        instance_1.updated_at = Date.today
         instance_1.more_arguments(0, 1)
       end
 
       it 'calls Rails.cache with the proper cache duration' do
         expect(Rails.cache).to receive(:fetch).with(
           "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:with_expiry:",
-          expires_in: 5.minutes)
+          expires_in: 5.minutes
+        )
         instance_1.with_expiry
       end
 
@@ -286,25 +289,29 @@ RSpec.describe Cacheable do
 
       it 'will cache the class method if there is an instance method with same name' do
         expect(instance_2.a_class_method).to eq(
-          "This is an instance method but the name is same as one of class's methods")
+          "This is an instance method but the name is same as one of class's methods"
+        )
       end
 
       it 'calls Rails.cache with the expected arguments' do
         expect(Rails.cache).to receive(:fetch).with(
-          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:a_class_method:x:y", expires_in: cache_duration)
-        CacheableClass2.a_class_method_with_cache('x', 'y')
+          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:a_class_method:x:y", expires_in: cache_duration
+        )
+        CacheableClass2.a_class_method('x', 'y')
       end
 
       it 'calls Rails.cache with the expected arguments with locale' do
         expect(Rails.cache).to receive(:fetch).with(
-          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:method_with_locale:3:1:en", expires_in: cache_duration)
-        CacheableClass2.method_with_locale_with_cache(3, 1)
+          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:method_with_locale:3:1:en", expires_in: cache_duration
+        )
+        CacheableClass2.method_with_locale(3, 1)
       end
 
       it 'calls Rails.cache with the provided duration' do
         expect(Rails.cache).to receive(:fetch).with(
           "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:with_expiry:",
-          expires_in: 6.minutes)
+          expires_in: 6.minutes
+        )
         CacheableClass2.with_expiry
       end
 
@@ -347,10 +354,11 @@ RSpec.describe Cacheable do
 
       describe 'delete_cache' do
         it 'calls Rails.cache.delete' do
-          CacheableClass2.method_3(4,5)
+          CacheableClass2.method_3(4, 5)
           expect(Rails.cache).to receive(:delete).with(
-            "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:method_3:4:5")
-          CacheableClass2.delete_method_3_cache(4,5)
+            "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:method_3:4:5"
+          )
+          CacheableClass2.delete_method_3_cache(4, 5)
         end
       end
     end
