@@ -202,14 +202,6 @@ RSpec.describe Cacheable do
         expect(instance_1.method_1).to eq(1)
       end
 
-      it 'returns correct value when calling *_with_cache method' do
-        expect(instance_1.method_1_with_cache).to eq(1)
-      end
-
-      it 'returns correct value when calling *_without_cache method' do
-        expect(instance_1.method_1_without_cache).to eq(1)
-      end
-
       it 'handles method names with punctuation marks' do
         expect(instance_1.contains?).to eq(123)
       end
@@ -289,17 +281,7 @@ RSpec.describe Cacheable do
       let(:instance_2) { CacheableClass2.new }
 
       it 'returns correct value when called directly' do
-        expect(CacheableClass2.a_class_method(1,2)).to eq('1-2-1-2-3')
-      end
-
-      it 'returns correct value when calliing *_without_cache method' do
-        expect(CacheableClass2.a_class_method_without_cache(1,2)).to eq(
-          '1-2-1-2-3')
-      end
-
-      it 'returns correct value when calling *_with_cache method' do
-        expect(CacheableClass2.a_class_method_with_cache(1,2)).to eq(
-          '1-2-1-2-3')
+        expect(CacheableClass2.a_class_method(1, 2)).to eq('1-2-1-2-3')
       end
 
       it 'will cache the class method if there is an instance method with same name' do
