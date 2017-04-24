@@ -40,20 +40,20 @@ RSpec.describe Cacheable do
       Cacheable::CacheVersion.inc
 
       module CacheableInclude
-        def a_defined_module_method
-          2
+        def a_defined_module_method(x)
+          x
         end
       end
 
       module CacheableExtend
-        def a_defined_module_class_method
-          2
+        def a_defined_module_class_method(x)
+          x
         end
       end
 
       class CacheableBase
-        def self.a_defined_super_class_method
-          3
+        def self.a_defined_super_class_method(x)
+          x
         end
       end
 
@@ -66,7 +66,8 @@ RSpec.describe Cacheable do
 
         caches_method :method_1, :output, :method_2, :more_arguments, :contains?
         caches_method :with_expiry, expires_in: 5.minutes
-        caches_extended_method :a_defined_super_class_method
+        caches_method :a_defined_module_method
+        caches_class_method :a_defined_module_class_method, :a_defined_super_class_method
 
         def method_1
           1
@@ -97,9 +98,11 @@ RSpec.describe Cacheable do
         include Cacheable
 
         caches_method :method_1, :method_2, :a_class_method, :method_3
-        caches_method :method_4, :method_5, memoized: true
-        caches_method :with_expiry, expires_in: 6.minutes
-        caches_method :method_with_locale, include_locale: true
+        caches_method :method_5, memoized: true
+        caches_class_method :method_4, memoized: true
+        caches_class_method :with_expiry, expires_in: 6.minutes
+        caches_class_method :method_with_locale, include_locale: true
+        caches_class_method :a_class_method, :method_3
 
         def method_1
           1
