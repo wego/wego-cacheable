@@ -1,22 +1,21 @@
 require 'rails_helper'
 
 RSpec.describe Cacheable do
-
   let(:cache_duration) { Cacheable.default_cache_duration }
 
   describe '.cache_key' do
     it 'returns the expected cache key' do
-      key = Cacheable.cache_key(Object, 'send', 1, 2, 3)
+      key = Cacheable.cache_key(Object, 'send', 1, 2, 3, {})
       expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3")
     end
 
     it 'returns the expected cache key with hash' do
-      key = Cacheable.cache_key(Object, 'send', 1, 2, 3, {a: 1})
+      key = Cacheable.cache_key(Object, 'send', 1, 2, 3, { a: 1 }, {})
       expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:{:a=>1}")
     end
 
     it 'returns the expected cache key with locale' do
-      key = Cacheable.cache_key(Object, 'send', 1, 2, 3, { include_locale: true })
+      key = Cacheable.cache_key(Object, 'send', 1, 2, 3, include_locale: true)
       expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:en")
     end
   end
@@ -24,14 +23,16 @@ RSpec.describe Cacheable do
   describe '.expire' do
     it 'expires the expected key' do
       expect(Rails.cache).to receive(:delete).with(
-        "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3")
-      Cacheable.expire(Object, 'send', 1, 2, 3)
+        "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3"
+      )
+      Cacheable.expire(Object, 'send', 1, 2, 3, {})
     end
 
     it 'expires the expected key with locale' do
       expect(Rails.cache).to receive(:delete).with(
-        "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:en")
-      Cacheable.expire(Object, 'send', 1, 2, 3, { include_locale: true })
+        "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:en"
+      )
+      Cacheable.expire(Object, 'send', 1, 2, 3, include_locale: true)
     end
   end
 
