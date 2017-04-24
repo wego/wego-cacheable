@@ -72,6 +72,9 @@ module Cacheable
         duration ||= Cacheable.default_cache_duration
         name = target.to_s.sub(/([?!=])$/, '')
         punctuation = Regexp.last_match(1)
+        cache_module_name = "#{name}_cache".camelize
+
+        return const_get(cache_module_name) if const_defined? cache_module_name
 
         cache_module = Module.new do
           define_method(target) do |*args|
@@ -100,7 +103,7 @@ module Cacheable
           end
         end
 
-        const_set("#{name}_cache".camelize, cache_module)
+        const_set(cache_module_name, cache_module)
       end
     end
   end
