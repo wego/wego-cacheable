@@ -26,11 +26,9 @@ module Cacheable
   end
 
   def self.cache_key(klass, method, *args)
-    include_locale = args.last.is_a?(Hash) && args.last.include?(:include_locale) ?
-                        args.pop.delete(:include_locale) :
-                        false
+    options = args.pop
     key_parts = [class_signature(klass), method, args]
-    key_parts << I18n.locale if include_locale
+    key_parts << I18n.locale if options.is_a?(Hash) && options[:include_locale] == true
     key_parts.join(':')
   end
 
