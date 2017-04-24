@@ -241,8 +241,22 @@ RSpec.describe Cacheable do
         end
         expect(Rails.cache).to receive(:fetch).with(
           "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.id}:more_arguments:0:1",
-          expires_in: cache_duration)
+          expires_in: cache_duration
+        )
         instance_1.more_arguments(0, 1)
+      end
+
+      context 'with method is defined from included module' do
+        it 'returns correct value' do
+          expect(instance_1.a_defined_module_method(2)).to eq(2)
+        end
+
+        it 'calls Rails.cache with the expected arguments' do
+          expect(Rails.cache).to receive(:fetch).with(
+            "#{Cacheable::CacheVersion.get}:#{instance_1.class.name}:#{instance_1.object_id}:a_defined_module_method:2", expires_in: cache_duration
+          )
+          instance_1.a_defined_module_method(2)
+        end
       end
 
       describe 'arguments' do
@@ -311,14 +325,30 @@ RSpec.describe Cacheable do
         CacheableClass2.with_expiry
       end
 
-      it 'added method_with_cache even if method is defined before from extend module' do
-        expect(CacheableClass1.a_defined_module_class_method).to eq(2)
-        expect(CacheableClass1.a_defined_module_class_method_with_cache).to eq(2)
+      context 'with method is defined from extend module' do
+        it 'returns correct value' do
+          expect(CacheableClass1.a_defined_module_class_method(2)).to eq(2)
+        end
+
+        it 'calls Rails.cache with the expected arguments' do
+          expect(Rails.cache).to receive(:fetch).with(
+            "#{Cacheable::CacheVersion.get}:#{CacheableClass1.name}:a_defined_module_class_method:2", expires_in: cache_duration
+          )
+          CacheableClass1.a_defined_module_class_method(2)
+        end
       end
 
-      it 'added method_with_cache even if method is defined before from super class' do
-        expect(CacheableClass1.a_defined_super_class_method).to eq(3)
-        expect(CacheableClass1.a_defined_super_class_method_with_cache).to eq(3)
+      context 'with method is defined from supper class' do
+        it 'returns correct value' do
+          expect(CacheableClass1.a_defined_super_class_method(3)).to eq(3)
+        end
+
+        it 'calls Rails.cache with the expected arguments' do
+          expect(Rails.cache).to receive(:fetch).with(
+            "#{Cacheable::CacheVersion.get}:#{CacheableClass1.name}:a_defined_super_class_method:3", expires_in: cache_duration
+          )
+          CacheableClass1.a_defined_super_class_method(3)
+        end
       end
 
       describe 'arguments' do
