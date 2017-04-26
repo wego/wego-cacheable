@@ -37,8 +37,19 @@ caches_method :name_of_the_method, include_locale: true #default include_locale 
 Need to use two separate define functions for instance and class methods (singeton methods)
 
 ```
-caches_method :a_defined_method
-caches_class_method :a_defined_class_method
+class Test
+    caches_method :a_defined_method
+    caches_class_method :a_defined_class_method
+    
+    def a_defined_method
+      #
+    end
+    
+    def self.a_defined_class_method
+      #
+    end
+end
+
 ```
 ## Generate methods
 `caches_method :method_name` or `caches_class_method :method_name` will only generate cached method with same name `method_name` for caching and `delete_method_name_cache` for clearing cache.
