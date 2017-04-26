@@ -2,13 +2,15 @@ module Cacheable
   module ActiveRecordExtensions
     extend ActiveSupport::Concern
     included do
-      class << self
-        def inherited_with_cache_extensions(kls)
-          inherited_without_cache_extensions kls
+      module IncludeInheritedCacheable
+        def inherited(kls)
+          super(kls)
           kls.send(:include, Cacheable)
         end
-        alias_method_chain :inherited, :cache_extensions
       end
+
+      singleton_class.prepend IncludeInheritedCacheable
+
       # Existing subclasses pick up the model extension as well
       self.descendants.each do |kls|
         kls.send(:include, Cacheable)
