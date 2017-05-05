@@ -19,18 +19,16 @@ module Cacheable
                   sign = "#{obj.class.name}:#{id}"
                   if obj.respond_to?(:updated_at) && obj.updated_at
                     sign += ":#{obj.updated_at}"
-                  end  
+                  end
                   sign
                 end
     "#{Cacheable::CacheVersion.get}:#{signature}"
   end
 
   def self.cache_key(klass, method, *args)
-    include_locale = args.last.is_a?(Hash) && args.last.include?(:include_locale) ?
-                        args.pop.delete(:include_locale) :
-                        false
+    options = args.pop
     key_parts = [class_signature(klass), method, args]
-    key_parts << I18n.locale if include_locale
+    key_parts << I18n.locale if options.is_a?(Hash) && options[:include_locale] == true
     key_parts.join(':')
   end
 
@@ -42,64 +40,69 @@ module Cacheable
     class_eval do
       def self.caches_method(*names)
         opts = names.extract_options!
-
-        @cached_methods ||= []
-        @cached_methods |= names
-
-        @options ||= {}
-        names.each { |name| @options[name] = opts }
-      end
-
-      def self.cacheable?(name)
-        @cached_methods.present? && @cached_methods.delete(name).present?
-      end
-
-      def self.method_added(name)
-        super
-        if cacheable? name
-          class_eval(generate_method_with_cache(name), __FILE__, __LINE__ + 1)
-          alias_method_chain name, :cache
+        @cache_options ||= {}
+        names.each do |name|
+          @cache_options[name] = opts
+          add_method_with_cache name
         end
       end
 
-      def self.singleton_method_added(name)
-        super
-        if cacheable? name
-          generated_method = generate_method_with_cache(name)
-          singleton_class.instance_eval do
-            class_eval(generated_method, __FILE__, __LINE__ + 1)
-            alias_method_chain name, :cache
-          end
+      def self.caches_class_method(*names)
+        opts = names.extract_options!
+        @cache_options ||= {}
+        names.each do |name|
+          @cache_options[name] = opts
+          add_class_method_with_cache name
         end
       end
 
       private
 
-      def self.generate_method_with_cache(target)
-        options = @options[target]
+      def self.add_method_with_cache(name)
+        prepend cache_module_for(name)
+      end
+
+      def self.add_class_method_with_cache(name)
+        singleton_class.prepend cache_module_for(name)
+      end
+
+      def self.cache_module_for(target)
+        options = @cache_options[target]
         duration = options.delete(:expires_in)
         duration ||= Cacheable.default_cache_duration
         name = target.to_s.sub(/([?!=])$/, '')
         punctuation = Regexp.last_match(1)
+        cache_module_name = "#{name}_cache".camelize
 
-        <<-EVAL
-        def #{name}_with_cache#{punctuation}(*args)
-          key = Cacheable.cache_key(self, '#{name}', *args#{", #{options}" unless options.empty?})
-          #{generate_request_store(target)} Rails.cache.fetch(key, expires_in: #{duration}) do
-            #{name}_without_cache#{punctuation}(*args)
+        return const_get(cache_module_name) if const_defined? cache_module_name
+
+        cache_module = Module.new do
+          define_method(target) do |*args|
+            key = Cacheable.cache_key(self, target, *args, options)
+            generate_request_store(key, options) do
+              Rails.cache.fetch(key, expires_in: duration) do
+                super(*args)
+              end
+            end
+          end
+
+          define_method("delete_#{name}_cache#{punctuation}") do |*args|
+            key = Cacheable.cache_key(self, target, *args, options)
+            RequestStore.store[key.to_sym] = nil
+            Rails.cache.delete(key)
+          end
+
+          private
+          def generate_request_store(key, options)
+            if options && options[:memoized] == true
+              RequestStore.store[key.to_sym] ||= yield
+            else
+              yield
+            end
           end
         end
 
-        def delete_#{name}_cache#{punctuation}(*args)
-          key = Cacheable.cache_key(self, '#{name}', *args#{", #{options}" unless options.empty?})
-          RequestStore.store[key.to_sym] = nil
-          Rails.cache.delete(key)
-        end
-        EVAL
-      end
-
-      def self.generate_request_store(target)
-        'RequestStore.store[key.to_sym] ||=' if @options[target][:memoized] == true
+        const_set(cache_module_name, cache_module)
       end
     end
   end

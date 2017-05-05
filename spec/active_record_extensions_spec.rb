@@ -23,8 +23,8 @@ module Cacheable
       class InheritSecond < FakeBase
         caches_method :hello, :world
       end
-      expect(InheritFirst.instance_eval { @cached_methods }).to eq([:something])
-      expect(InheritSecond.instance_eval { @cached_methods }).to eq([:hello, :world])
+      expect(InheritFirst.instance_eval { @cache_options }).to include(:something)
+      expect(InheritSecond.instance_eval { @cache_options }).to include(:hello, :world)
     end
   end
 end
