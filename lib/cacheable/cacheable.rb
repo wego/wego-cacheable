@@ -94,7 +94,7 @@ module Cacheable
 
           private
           def generate_request_store(key, options)
-            if options && options[:memoized] == true
+            unless options && options[:memoized] == false
               RequestStore.store[key.to_sym] ||= yield
             else
               yield

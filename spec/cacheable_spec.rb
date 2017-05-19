@@ -99,8 +99,8 @@ RSpec.describe Cacheable do
         include Cacheable
 
         caches_method :method_1, :method_2, :a_class_method, :method_3
-        caches_method :method_5, memoized: true
-        caches_class_method :method_4, memoized: true
+        caches_method :method_5, memoized: false
+        caches_class_method :method_4, memoized: false
         caches_class_method :with_expiry, expires_in: 6.minutes
         caches_class_method :method_with_locale, include_locale: true
         caches_class_method :a_class_method, :method_3
@@ -169,7 +169,7 @@ RSpec.describe Cacheable do
       subject { Rails.cache }
 
       context 'given class methods' do
-        it { expect(subject).to receive(:fetch).once.and_return(4) }
+        it { expect(subject).to receive(:fetch).twice.and_return(4) }
         after do
           CacheableClass2.method_4(4)
           CacheableClass2.method_4(4)
@@ -178,16 +178,16 @@ RSpec.describe Cacheable do
 
       context 'given instance methods' do
         let(:instance_2) { CacheableClass2.new }
-        it { expect(subject).to receive(:fetch).once.and_return(5) }
+        it { expect(subject).to receive(:fetch).twice.and_return(5) }
         after do
           instance_2.method_5(5)
           instance_2.method_5(5)
         end
       end
 
-      context 'given methods without memoized' do
+      context 'given methods with memoized as default' do
         let(:instance_1) { CacheableClass1.new }
-        it { expect(subject).to receive(:fetch).twice.and_return(1) }
+        it { expect(subject).to receive(:fetch).once.and_return(2) }
         after do
           instance_1.method_1
           instance_1.method_1
