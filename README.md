@@ -29,10 +29,16 @@ Cacheable::CacheVersion.init
 ```
 In your model, add the functions that you want to cache the data
 ```ruby
-caches_method :name_of_the_method
-caches_method :name_of_the_method, expires_in: 1.day #defalut expires_in is 1 day
-caches_method :name_of_the_method, include_locale: true #default include_locale is false
+caches_method :method_name
+caches_method :method_name, expires_in: 1.day #defalut expires_in is 1 day
+caches_method :method_name, include_locale: true #default include_locale is false
 ```
+
+In order to prevent too many request sent to caching storate (memcache) we will store cache in-memory by default. In-memory storage is only available per request. If you want to disable in-memory can set like this
+```ruby
+caches_method :method_name, memoized: false
+```
+
 ### Notice
 Need to use two separate define functions for instance and class methods (singeton methods)
 
