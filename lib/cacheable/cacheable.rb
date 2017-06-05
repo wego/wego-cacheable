@@ -94,7 +94,7 @@ module Cacheable
 
           private
           def generate_request_store(key, options)
-            unless options && options[:memoized] == false
+            unless (options && options[:memoized] == false) || Rails.application.config.action_controller.perform_caching == false
               RequestStore.store[key.to_sym] ||= yield
             else
               yield
