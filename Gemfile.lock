@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    cacheable (0.0.1)
+    cacheable (0.1.1)
       request_store
 
 GEM
