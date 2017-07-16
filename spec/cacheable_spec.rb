@@ -187,7 +187,7 @@ RSpec.describe Cacheable do
 
       context 'given methods with memoized as default' do
         let(:instance_1) { CacheableClass1.new }
-        it { expect(subject).to receive(:fetch).once.and_return(2) }
+        it { expect(subject).to receive(:fetch).twice.and_return(2) }
         after do
           instance_1.method_1
           instance_1.method_1
