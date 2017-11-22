@@ -9,6 +9,14 @@ module Cacheable
     @duration = duration
   end
 
+  def self.currency
+    @currency
+  end
+
+  def self.set_currency(currency)
+    @currency = currency
+  end
+
   self.default_cache_duration = 1.day
 
   def self.class_signature(obj)
