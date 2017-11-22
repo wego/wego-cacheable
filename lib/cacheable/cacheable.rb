@@ -37,7 +37,7 @@ module Cacheable
     options = args.pop
     key_parts = [class_signature(klass), method, args]
     key_parts << I18n.locale if options.is_a?(Hash) && options[:include_locale] == true
-    key_parts << Cacheable.currency if options.is_a?(Hash) && options[:include_currency] == true
+    key_parts << Cacheable.currency if options.is_a?(Hash) && options[:include_currency] == true && Cacheable.currency
     key_parts.join(':')
   end
 
