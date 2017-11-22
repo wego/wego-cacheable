@@ -13,7 +13,7 @@ module Cacheable
     @currency
   end
 
-  def self.set_currency(currency)
+  def self.currency=(currency)
     @currency = currency
   end
 
