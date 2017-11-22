@@ -3,6 +3,8 @@ require 'rails_helper'
 RSpec.describe Cacheable do
   let(:cache_duration) { Cacheable.default_cache_duration }
 
+  before { Cacheable.currency = 'SGD' }
+
   describe '.cache_key' do
     it 'returns the expected cache key' do
       key = Cacheable.cache_key(Object, 'send', 1, 2, 3, {})
@@ -17,6 +19,11 @@ RSpec.describe Cacheable do
     it 'returns the expected cache key with locale' do
       key = Cacheable.cache_key(Object, 'send', 1, 2, 3, include_locale: true)
       expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:en")
+    end
+
+    it 'returns the expected cache key with currency' do
+      key = Cacheable.cache_key(Object, 'send', 1, 2, 3, include_currency: true)
+      expect(key).to eq("#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:SGD")
     end
   end
 
@@ -33,6 +40,13 @@ RSpec.describe Cacheable do
         "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:en"
       )
       Cacheable.expire(Object, 'send', 1, 2, 3, include_locale: true)
+    end
+
+    it 'expires the expected key with currency' do
+      expect(Rails.cache).to receive(:delete).with(
+        "#{Cacheable::CacheVersion.get}:#{Object.name}:send:1:2:3:SGD"
+      )
+      Cacheable.expire(Object, 'send', 1, 2, 3, include_currency: true)
     end
   end
 
@@ -103,6 +117,7 @@ RSpec.describe Cacheable do
         caches_class_method :method_4, memoized: false
         caches_class_method :with_expiry, expires_in: 6.minutes
         caches_class_method :method_with_locale, include_locale: true
+        caches_class_method :method_with_currency, include_currency: true
         caches_class_method :a_class_method, :method_3
 
         def method_1
@@ -114,6 +129,10 @@ RSpec.describe Cacheable do
         end
 
         def self.method_with_locale(a, b = 1)
+          [a, b]
+        end
+
+        def self.method_with_currency(a, b = 1)
           [a, b]
         end
 
@@ -305,6 +324,13 @@ RSpec.describe Cacheable do
           "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:method_with_locale:3:1:en", expires_in: cache_duration
         )
         CacheableClass2.method_with_locale(3, 1)
+      end
+
+      it 'calls Rails.cache with the expected arguments with currency' do
+        expect(Rails.cache).to receive(:fetch).with(
+          "#{Cacheable::CacheVersion.get}:#{CacheableClass2.name}:method_with_currency:3:1:SGD", expires_in: cache_duration
+        )
+        CacheableClass2.method_with_currency(3, 1)
       end
 
       it 'calls Rails.cache with the provided duration' do
