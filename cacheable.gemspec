@@ -18,6 +18,6 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency "rails", '~> 5.0', '>= 5.0.0'
   s.add_development_dependency 'sqlite3', '~> 0'
-  s.add_runtime_dependency "request_store", '~> 0'
+  s.add_runtime_dependency "request_store", '~> 1.1'
   s.add_development_dependency 'rspec', '~> 0'
 end
